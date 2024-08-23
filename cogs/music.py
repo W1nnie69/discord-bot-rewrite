@@ -3,6 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import asyncio
 import yt_dlp
+from discord import Color
+
 
 
 class Music(commands.Cog):
@@ -17,6 +19,7 @@ class Music(commands.Cog):
 
     song_queue = []
     current_song = []
+    yt_title = []
     loop_current_song = False
     queue_is_looping = False
     loop = False
@@ -56,6 +59,7 @@ class Music(commands.Cog):
 
                 if not self.current_song:
 
+                    self.yt_title.pop(0)
                     # adds first song in song_queue to current_song (for when loop is applied when the current song is playing)
                     self.current_song.append(self.song_queue[0])
                     # Takes first song in song_queue and plays it while removing it from the list
@@ -63,6 +67,10 @@ class Music(commands.Cog):
                     self.bot.loop.create_task(self.play_youtube(interaction, url))
 
             elif self.song_queue:
+
+                if self.yt_title:
+                    self.yt_title.pop(0)
+
                 self.current_song.clear()
                 self.current_song.append(self.song_queue[0])
                 url = self.song_queue.pop(0)
@@ -113,7 +121,9 @@ class Music(commands.Cog):
             # await ctx.send(f"Now playing: {info['title']}")
             # await interaction.response.send_message(f"Now playing: {info['title']}")
             
-        return info['title']
+            # self.yt_title.append(info['title'])
+
+        # return info['title']
 
 
 
@@ -146,6 +156,7 @@ class Music(commands.Cog):
 
     @app_commands.command(name='play', description='plays youtube links')
     async def play(self, interaction: discord.Interaction, link: str):
+
         channel = interaction.user.voice.channel
         vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
         await interaction.response.send_message("Yessir")
@@ -155,8 +166,17 @@ class Music(commands.Cog):
 
         self.song_queue.append(link)
 
+        with yt_dlp.YoutubeDL() as ydl:
+            
+            info = ydl.extract_info(link, download=False)
+            v_title = info.get('title', None)
+            self.yt_title.append(v_title)
+            print(v_title)
+
         if not interaction.guild.voice_client.is_playing():
             self.play_next(interaction)
+
+            #todo: fix the stupid title thing
         
 
 
@@ -193,8 +213,41 @@ class Music(commands.Cog):
     async def loop(self, interaction: discord.Interaction):
 
         self.loop_current_song = not self.loop_current_song
-        await interaction.response.send_message("Looping cuurent song")
+        await interaction.response.send_message("Looping current song")
 
+
+
+
+    @app_commands.command(name='loop_q', description='Loops the whole queue')
+    async def loop_q(self, interaction: discord.Interaction):
+        self.queue_is_looping = not self.queue_is_looping
+
+        if self.queue_is_looping == True:
+            await interaction.response.send_message("Looping the queue")
+
+        else:
+            await interaction.response.send_message("Not looping the queue")
+
+
+
+
+    @app_commands.command(name='queue', description='Shows the song queue')
+    async def queue(self, interaction: discord.Interaction):
+
+        yellow = Color.yellow()
+
+        embed1 = discord.Embed(
+            title='Queue list',
+            colour=yellow,
+        )
+
+        songtitle = self.yt_title
+
+        songtitle = '\n'.join(songtitle)
+
+        embed1.add_field(name='Title', value=songtitle, inline=True)
+
+        await interaction.response.send_message(embed=embed1)
 
 
 
