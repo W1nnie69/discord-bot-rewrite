@@ -5,7 +5,6 @@ import asyncio
 import yt_dlp
 from discord import Color
 import time
-from icecream import ic
 from youtube_search import YoutubeSearch
 import json
 
@@ -272,12 +271,12 @@ class Music(commands.Cog):
     async def queue(self, interaction: discord.Interaction):
 
         await interaction.response.defer()
-
+    
         yellow = Color.yellow()
 
         embed_songtitle = discord.Embed(
             title='Queue list',
-            colour=yellow,
+            colour=yellow
         )
 
         # cs = self.current_song
@@ -287,12 +286,6 @@ class Music(commands.Cog):
         # print(sq)
 
         # self.check_current_song
-        ic("before if check", self.current_song)
-        ic("before if check", self.song_queue)
-        print("")
-        ic("before if check", self.check_current_song)
-        ic("before if check", self.check_song_queue)
-        print("")
 
         if self.check_current_song != self.current_song:
 
@@ -320,13 +313,6 @@ class Music(commands.Cog):
                     print(info_sq)
 
 
-            ic(self.current_song)
-            ic(self.song_queue)
-            print("")
-            ic(self.check_current_song)
-            ic(self.check_song_queue)
-
-
         cs_title = '\n'.join(self.yt_cstitle)
 
         sq_title = '\n'.join(self.yt_sqtitle)
@@ -342,7 +328,7 @@ class Music(commands.Cog):
 
 
 
-    @app_commands.command(name='find', description='find song')
+    @app_commands.command(name='find', description='find a song/video on youtube')
     async def find(self, interaction: discord.Interaction, query: str):
 
         await interaction.response.defer()
@@ -380,9 +366,12 @@ class Music(commands.Cog):
 
         emtitle = '\n'.join(emtitle)
 
+        yellow = Color.yellow()
+
 
         embed_find = discord.Embed(
-            title='Search Results'
+            title=f'Search Results: "{query}" ',
+            colour=yellow
         )
 
 
@@ -416,7 +405,7 @@ class Music(commands.Cog):
         if not interaction.guild.voice_client.is_playing():
             self.play_next(interaction)
 
-        await interaction.followup.send("ok boss")
+        await interaction.followup.send(f"Option {value} selected!")
 
 
 
