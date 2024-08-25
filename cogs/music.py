@@ -128,7 +128,7 @@ class Music(commands.Cog):
             voice_channel.stop()
 
             FFMPEG_OPTIONS = {
-            'executable': 'ffmpeg.exe',
+            'executable': '/bin/ffmpeg',
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
             'options': '-vn'
         }   
@@ -418,4 +418,4 @@ class Music(commands.Cog):
 
    
 async def setup(bot):
-    await bot.add_cog(Music(bot), guilds=[discord.Object(id=718052721751752776)])
+    await bot.add_cog(Music(bot))
