@@ -4,8 +4,8 @@ from discord import app_commands
 import asyncio
 import yt_dlp
 from discord import Color
-
-
+import time
+from icecream import ic
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -19,7 +19,11 @@ class Music(commands.Cog):
 
     song_queue = []
     current_song = []
-    yt_title = []
+    yt_sqtitle = []
+    yt_cstitle = []
+    check_song_queue = []
+    check_current_song = []
+
     loop_current_song = False
     queue_is_looping = False
     loop = False
@@ -68,9 +72,6 @@ class Music(commands.Cog):
 
             elif self.song_queue:
 
-                if self.yt_title:
-                    self.yt_title.pop(0)
-
                 self.current_song.clear()
                 self.current_song.append(self.song_queue[0])
                 url = self.song_queue.pop(0)
@@ -81,7 +82,7 @@ class Music(commands.Cog):
                 # For when queue is empty
                 voice_channel = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
                 if voice_channel.is_playing():
-                    asyncio.sleep(1)
+                    time.sleep(1)
 
                 else:
                     self.current_song.clear()
@@ -166,12 +167,12 @@ class Music(commands.Cog):
 
         self.song_queue.append(link)
 
-        with yt_dlp.YoutubeDL() as ydl:
+        # with yt_dlp.YoutubeDL() as ydl:
             
-            info = ydl.extract_info(link, download=False)
-            v_title = info.get('title', None)
-            self.yt_title.append(v_title)
-            print(v_title)
+        #     info = ydl.extract_info(link, download=False)
+        #     v_title = info.get('title', None)
+        #     self.yt_title.append(v_title)
+        #     print(v_title)
 
         if not interaction.guild.voice_client.is_playing():
             self.play_next(interaction)
@@ -183,14 +184,13 @@ class Music(commands.Cog):
     @app_commands.command(name='skip', description='skips the current song')
     async def skip(self, interaction: discord.Interaction):
         vc = interaction.guild.voice_channels
-        await interaction.response.defer()
 
         if vc and interaction.guild.voice_client.is_playing():
             interaction.guild.voice_client.stop()
 
 
-        await interaction.followup.send("Skipped!")
-        self.play_next(interaction)
+        await interaction.response.send_message("Skipped!")
+        
 
 
 
@@ -205,8 +205,8 @@ class Music(commands.Cog):
             self.current_song.clear()
 
         await interaction.followup.send("Bot Stopped!")
-    
-
+        
+        #fix stop as it works like skip LOL
 
 
     @app_commands.command(name='loop', description='Loops the current song')
@@ -234,6 +234,8 @@ class Music(commands.Cog):
     @app_commands.command(name='queue', description='Shows the song queue')
     async def queue(self, interaction: discord.Interaction):
 
+        await interaction.response.defer()
+
         yellow = Color.yellow()
 
         embed1 = discord.Embed(
@@ -241,13 +243,62 @@ class Music(commands.Cog):
             colour=yellow,
         )
 
-        songtitle = self.yt_title
+        # cs = self.current_song
+        # sq = self.song_queue
+        
+        # print(cs)
+        # print(sq)
 
-        songtitle = '\n'.join(songtitle)
+        # self.check_current_song
+        ic("before if check", self.current_song)
+        ic("before if check", self.song_queue)
+        print("")
+        ic("before if check", self.check_current_song)
+        ic("before if check", self.check_song_queue)
+        print("")
 
-        embed1.add_field(name='Title', value=songtitle, inline=True)
+        if self.check_current_song != self.current_song:
 
-        await interaction.response.send_message(embed=embed1)
+            self.check_current_song.clear()
+            self.check_song_queue.clear()
+            self.yt_cstitle.clear()
+            self.yt_sqtitle.clear()
+
+            with yt_dlp.YoutubeDL() as ydl_q:
+                
+                self.check_current_song = self.current_song.copy()
+                self.check_song_queue = self.song_queue.copy()
+
+
+                for i in self.check_current_song:
+                    info_cs = ydl_q.extract_info(i, download=False)
+                    info_cs = info_cs.get('title', None)
+                    self.yt_cstitle.append(info_cs)
+                    print(info_cs)
+
+                for i in self.check_song_queue:
+                    info_sq = ydl_q.extract_info(i, download=False)
+                    info_sq = info_sq.get('title', None)
+                    self.yt_sqtitle.append(info_sq)
+                    print(info_sq)
+
+
+            ic(self.current_song)
+            ic(self.song_queue)
+            print("")
+            ic(self.check_current_song)
+            ic(self.check_song_queue)
+
+
+        cs_title = '\n'.join(self.yt_cstitle)
+
+        sq_title = '\n'.join(self.yt_sqtitle)
+
+        embed1.add_field(name='Current Song', value=cs_title, inline=False)
+
+        embed1.add_field(name='Queue', value=sq_title, inline=False)
+
+        await interaction.followup.send(embed=embed1)
 
 
 
