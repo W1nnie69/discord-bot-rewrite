@@ -6,6 +6,10 @@ import yt_dlp
 from discord import Color
 import time
 from icecream import ic
+from youtube_search import YoutubeSearch
+import json
+
+
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -27,6 +31,19 @@ class Music(commands.Cog):
     loop_current_song = False
     queue_is_looping = False
     loop = False
+
+
+    async def rmJsonVal(self):
+        with open("temp-ytlist.json", "r") as file:
+            data = json.load(file)
+
+        for i in range(1,11):
+            data.pop(str(i))
+
+        with open("temp-ytlist.json", "w") as file2:
+            json.dump(data, file2, indent=4)
+
+
 
 
 
@@ -136,9 +153,13 @@ class Music(commands.Cog):
         await ctx.send(f"Synced {len(fmt)} commands.")
         
 
+
+
     @app_commands.command(name="ping", description="testing")
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.send_message("pong")
+
+
 
 
     @app_commands.command(name='join', description='join user channel')
@@ -148,11 +169,16 @@ class Music(commands.Cog):
         await interaction.response.send_message("I'm coming daddy")
 
 
+
+
+
     @app_commands.command(name='leave', description='leaves the channel')
     async def leave(self, interaction: discord.Interaction):
         vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
         await vc.disconnect()
         await interaction.response.send_message("Bye Daddy")
+
+
 
 
     @app_commands.command(name='play', description='plays youtube links')
@@ -181,6 +207,10 @@ class Music(commands.Cog):
         
 
 
+
+
+
+
     @app_commands.command(name='skip', description='skips the current song')
     async def skip(self, interaction: discord.Interaction):
         vc = interaction.guild.voice_channels
@@ -194,6 +224,8 @@ class Music(commands.Cog):
 
 
 
+
+
     
     @app_commands.command(name='stop', description='Stops the current song')
     async def stop(self, interaction: discord.Interaction):
@@ -203,10 +235,14 @@ class Music(commands.Cog):
         if vc and interaction.guild.voice_client.is_playing():
             interaction.guild.voice_client.stop()
             self.current_song.clear()
+            self.song_queue.clear()
 
         await interaction.followup.send("Bot Stopped!")
         
         #fix stop as it works like skip LOL
+
+
+
 
 
     @app_commands.command(name='loop', description='Loops the current song')
@@ -231,6 +267,7 @@ class Music(commands.Cog):
 
 
 
+
     @app_commands.command(name='queue', description='Shows the song queue')
     async def queue(self, interaction: discord.Interaction):
 
@@ -238,7 +275,7 @@ class Music(commands.Cog):
 
         yellow = Color.yellow()
 
-        embed1 = discord.Embed(
+        embed_songtitle = discord.Embed(
             title='Queue list',
             colour=yellow,
         )
@@ -294,13 +331,92 @@ class Music(commands.Cog):
 
         sq_title = '\n'.join(self.yt_sqtitle)
 
-        embed1.add_field(name='Current Song', value=cs_title, inline=False)
+        embed_songtitle.add_field(name='Current Song', value=cs_title, inline=False)
 
-        embed1.add_field(name='Queue', value=sq_title, inline=False)
+        embed_songtitle.add_field(name='Queue', value=sq_title, inline=False)
 
-        await interaction.followup.send(embed=embed1)
+        await interaction.followup.send(embed=embed_songtitle)
 
 
+
+
+
+
+    @app_commands.command(name='find', description='find song')
+    async def find(self, interaction: discord.Interaction, query: str):
+
+        await interaction.response.defer()
+
+        result_dict = {}
+        # title_dict = []
+        # a = 0
+
+        results = YoutubeSearch(query, max_results=10).to_dict()
+        for index, v in enumerate(results, start=1):
+            # a = a + 1  
+
+            link = 'https://www.youtube.com/watch?v=' + v['id']
+            title = v['title']
+
+            result_dict[str(index)] = {"title": title, "link": link}
+            # yt_title = v['title']
+            
+            # title_dict.append(v)
+
+
+
+        with open("temp-ytlist.json", "w") as outfile: 
+            json.dump(result_dict, outfile, indent=4)
+
+        # for i in range(1,11):
+        #     msg = dict1[i]
+
+        # numbered_links = [f"{idx}) {data['title']}: {data['link']}" for idx, data in result_dict.items()]
+        # numbered_links_str = '\n'.join(numbered_links)
+        emtitle = []
+
+        for i in result_dict:
+            emtitle.append(f"{i}) {result_dict[i]['title']}")
+
+        emtitle = '\n'.join(emtitle)
+
+
+        embed_find = discord.Embed(
+            title='Search Results'
+        )
+
+
+        embed_find.add_field(name='title', value=emtitle, inline=False)
+
+
+        await interaction.followup.send(embed=embed_find)
+            
+
+
+
+    @app_commands.command(name='op', description='options for /find')
+    async def op(self, interaction: discord.Interaction, value: str):
+        await interaction.response.defer()
+
+        channel = interaction.user.voice.channel
+        vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
+
+        with open("temp-ytlist.json", "r") as file:
+            data = json.load(file)
+
+        link = data[value]['link']
+        
+        await self.rmJsonVal()
+
+        self.song_queue.append(link)
+
+        if vc is None:
+            await channel.connect()
+
+        if not interaction.guild.voice_client.is_playing():
+            self.play_next(interaction)
+
+        await interaction.followup.send("ok boss")
 
 
 
@@ -313,4 +429,4 @@ class Music(commands.Cog):
 
    
 async def setup(bot):
-    await bot.add_cog(Music(bot), guilds=[discord.Object(id=1259846523626197043)])
+    await bot.add_cog(Music(bot), guilds=[discord.Object(id=718052721751752776)])
