@@ -148,7 +148,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def sync(self, ctx) -> None:
-        fmt = await ctx.bot.tree.sync(guild=ctx.guild)
+        fmt = await ctx.bot.tree.sync()
         await ctx.send(f"Synced {len(fmt)} commands.")
         
 
