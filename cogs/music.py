@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import asyncio
 import yt_dlp
 from discord import Color
 import time
 from youtube_search import YoutubeSearch
 import json
-
+from icecream import ic
 
 
 class Music(commands.Cog):
@@ -32,6 +31,18 @@ class Music(commands.Cog):
     loop = False
 
 
+    async def join_channel(self, ctx):
+        channel = ctx.author.voice.channel
+        await channel.connect()
+
+
+    
+    async def say_q_empty(self, ctx):
+        await ctx.send(f"Queue is empty")
+
+
+
+
     async def rmJsonVal(self):
         with open("temp-ytlist.json", "r") as file:
             data = json.load(file)
@@ -45,8 +56,23 @@ class Music(commands.Cog):
 
 
 
+    async def isJsonEmpty(self):
+        with open("temp-ytlist.json", "rb") as file:
+            data = json.load(file)
+        
+        if not data:
+            print("json empty")
+            return True
+        
+        else:
+            print("json is not empty")
+            return False
 
-    def play_next(self, interaction):
+
+
+
+
+    def play_next(self, ctx):
         
     # If looping, play the same song again
         if self.loop_current_song:
@@ -54,7 +80,7 @@ class Music(commands.Cog):
             if self.current_song:
                 # Takes song from current_song and plays it
                 loop1_url = self.current_song[0]
-                self.bot.loop.create_task(self.play_youtube(interaction, loop1_url))
+                self.bot.loop.create_task(self.play_youtube(ctx, loop1_url))
             
             else: # In case if current_song is empty and loop is enabled
                 # adds the first song in song_queue to current_song
@@ -62,7 +88,7 @@ class Music(commands.Cog):
 
                 # Takes song from current_song and plays it
                 loop2_url = self.current_song[0]     
-                self.bot.loop.create_task(self.play_youtube(interaction, loop2_url))
+                self.bot.loop.create_task(self.play_youtube(ctx, loop2_url))
 
         # When not looping current song
         elif not self.loop_current_song:
@@ -75,7 +101,7 @@ class Music(commands.Cog):
                     self.current_song.clear()
                     self.current_song.append(self.song_queue[0])     
                     url = self.song_queue.pop(0)
-                    self.bot.loop.create_task(self.play_youtube(interaction, url))
+                    self.bot.loop.create_task(self.play_youtube(ctx, url))
 
                 if not self.current_song:
 
@@ -84,29 +110,30 @@ class Music(commands.Cog):
                     self.current_song.append(self.song_queue[0])
                     # Takes first song in song_queue and plays it while removing it from the list
                     url = self.song_queue.pop(0)
-                    self.bot.loop.create_task(self.play_youtube(interaction, url))
+                    self.bot.loop.create_task(self.play_youtube(ctx, url))
 
             elif self.song_queue:
 
                 self.current_song.clear()
                 self.current_song.append(self.song_queue[0])
                 url = self.song_queue.pop(0)
-                self.bot.loop.create_task(self.play_youtube(interaction, url))
+                self.bot.loop.create_task(self.play_youtube(ctx, url))
 
 
             else:
                 # For when queue is empty
-                voice_channel = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
+                voice_channel = ctx.voice_client
                 if voice_channel.is_playing():
                     time.sleep(1)
 
                 else:
+                    self.bot.loop.create_task(self.say_q_empty(ctx))
                     self.current_song.clear()
 
 
 
 
-    async def play_youtube(self, interaction, url):
+    async def play_youtube(self, ctx, url):
 
         ydl_opts = {
         'format': 'bestaudio/best',
@@ -124,7 +151,7 @@ class Music(commands.Cog):
             info = ydl.extract_info(url, download=False)
             url2 = info['url']
 
-            voice_channel = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
+            voice_channel = ctx.voice_client
             voice_channel.stop()
 
             FFMPEG_OPTIONS = {
@@ -133,7 +160,7 @@ class Music(commands.Cog):
             'options': '-vn'
         }   
 
-            voice_channel.play(discord.FFmpegOpusAudio(url2, **FFMPEG_OPTIONS), after=lambda e: self.play_next(interaction))
+            voice_channel.play(discord.FFmpegOpusAudio(url2, **FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
 
             # await ctx.send(f"Now playing: {info['title']}")
             # await interaction.response.send_message(f"Now playing: {info['title']}")
@@ -146,61 +173,77 @@ class Music(commands.Cog):
 
 
 
-    @commands.command()
-    async def sync(self, ctx) -> None:
-        fmt = await ctx.bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"Synced {len(fmt)} commands.")
+    # @commands.command()
+    # async def sync(self, ctx, global_sync: bool = False) -> None:
+    #     if global_sync:
+    #         # Sync commands globally
+    #         fmt = await self.bot.tree.sync()
+    #         await ctx.send(f"Synced {len(fmt)} global commands.")
+    #     else:
+    #         # Sync commands for the guild
+    #         fmt = await self.bot.tree.sync(guild=ctx.guild)
+    #         await ctx.send(f"Synced {len(fmt)} guild commands.")
         
 
 
 
-    @app_commands.command(name="ping", description="testing")
-    async def ping(self, interaction: discord.Interaction):
-        await interaction.response.send_message("pong")
+    # @commands.command()
+    # async def clear_global_commands(self, ctx):
+    #     global_commands = await self.bot.tree.fetch_commands()
+    #     for command in global_commands:
+    #         await self.bot.tree.delete_command(command.id)
+    #     await ctx.send("All global commands have been cleared.")
+        
+
+
+
+    # @commands.command()
+    # async def desync(self, ctx) -> None:
+    #     ctx.bot.tree.clear_commands(guild=ctx.guild)
+    #     await ctx.send("Local commands have been cleared.")
+
+
+
+    @commands.command(name="ping", description="testing")
+    async def ping(self, ctx):
+        await ctx.send("pong")
 
 
 
 
-    @app_commands.command(name='join', description='join user channel')
-    async def join(self, interaction: discord.Interaction):
-        channel = interaction.user.voice.channel
-        await channel.connect()
-        await interaction.response.send_message("I'm coming daddy")
-
-
-
-
-
-    @app_commands.command(name='leave', description='leaves the channel')
-    async def leave(self, interaction: discord.Interaction):
-        vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
-        await vc.disconnect()
-        await interaction.response.send_message("Bye Daddy")
-
-
-
-
-    @app_commands.command(name='play', description='plays youtube links')
-    async def play(self, interaction: discord.Interaction, link: str):
-
-        channel = interaction.user.voice.channel
-        vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
-        await interaction.response.send_message("Yessir")
-
-        if vc is None:
+    @commands.command(name='join', description='join user channel')
+    async def join(self, ctx):
+        channel = ctx.author.voice.channel
+        if not ctx.voice_client:
             await channel.connect()
+        else:
+            await ctx.voice_client.move_to(channel)
+        
 
-        self.song_queue.append(link)
 
-        # with yt_dlp.YoutubeDL() as ydl:
-            
-        #     info = ydl.extract_info(link, download=False)
-        #     v_title = info.get('title', None)
-        #     self.yt_title.append(v_title)
-        #     print(v_title)
 
-        if not interaction.guild.voice_client.is_playing():
-            self.play_next(interaction)
+
+
+    @commands.command(name='leave', description='leaves the channel')
+    async def leave(self, ctx):
+        await ctx.voice_client.disconnect()
+        
+
+
+
+
+    @commands.command(name='play', description='plays youtube links')
+    async def play(self, ctx, url):
+
+        # Check if the bot is already connected to a voice channel
+        if ctx.voice_client is None:
+        # If not connected, join the voice channel
+            await self.join_channel(ctx)
+
+        self.song_queue.append(url)
+
+        if not ctx.voice_client.is_playing():
+            self.play_next(ctx)
 
             #todo: fix the stupid title thing
         
@@ -210,15 +253,13 @@ class Music(commands.Cog):
 
 
 
-    @app_commands.command(name='skip', description='skips the current song')
-    async def skip(self, interaction: discord.Interaction):
-        vc = interaction.guild.voice_channels
+    @commands.command(name='skip', description='skips the current song')
+    async def skip(self, ctx):
+        voice_channel = ctx.voice_client
+        if voice_channel and voice_channel.is_playing():
+            voice_channel.stop()
 
-        if vc and interaction.guild.voice_client.is_playing():
-            interaction.guild.voice_client.stop()
-
-
-        await interaction.response.send_message("Skipped!")
+        self.play_next(ctx)
         
 
 
@@ -226,17 +267,13 @@ class Music(commands.Cog):
 
 
     
-    @app_commands.command(name='stop', description='Stops the current song')
-    async def stop(self, interaction: discord.Interaction):
-        vc = interaction.guild.voice_channels
-        await interaction.response.defer()
-
-        if vc and interaction.guild.voice_client.is_playing():
-            interaction.guild.voice_client.stop()
+    @commands.command(name='stop', description='Stops the current song')
+    async def stop(self, ctx):
+        voice_channel = ctx.voice_client
+        if voice_channel and voice_channel.is_playing():
+            voice_channel.stop()
             self.current_song.clear()
             self.song_queue.clear()
-
-        await interaction.followup.send("Bot Stopped!")
         
         #fix stop as it works like skip LOL
 
@@ -244,33 +281,32 @@ class Music(commands.Cog):
 
 
 
-    @app_commands.command(name='loop', description='Loops the current song')
-    async def loop(self, interaction: discord.Interaction):
+    @commands.command(name='loop', description='Loops the current song')
+    async def loop(self, ctx):
 
         self.loop_current_song = not self.loop_current_song
-        await interaction.response.send_message("Looping current song")
+        await ctx.send(f"Looping current song: {self.loop_current_song}")
 
 
 
 
-    @app_commands.command(name='loop_q', description='Loops the whole queue')
-    async def loop_q(self, interaction: discord.Interaction):
+    @commands.command(name='loop_q', description='Loops the whole queue')
+    async def loop_q(self, ctx):
         self.queue_is_looping = not self.queue_is_looping
 
         if self.queue_is_looping == True:
-            await interaction.response.send_message("Looping the queue")
+            await ctx.send(f"Looping the queue")
 
         else:
-            await interaction.response.send_message("Not looping the queue")
+            await ctx.send(f"Not looping the queue")
 
 
 
 
 
-    @app_commands.command(name='queue', description='Shows the song queue')
-    async def queue(self, interaction: discord.Interaction):
 
-        await interaction.response.defer()
+    @commands.command(name='queue', description='Shows the song queue')
+    async def queue(self, ctx):
     
         yellow = Color.yellow()
 
@@ -286,6 +322,11 @@ class Music(commands.Cog):
         # print(sq)
 
         # self.check_current_song
+        ic(self.current_song)
+        ic(self.song_queue)
+        print("")
+        ic(self.check_current_song)
+        ic(self.check_song_queue)
 
         if self.check_current_song != self.current_song:
 
@@ -312,6 +353,14 @@ class Music(commands.Cog):
                     self.yt_sqtitle.append(info_sq)
                     print(info_sq)
 
+        
+        ic(self.current_song)
+        ic(self.song_queue)
+        print("")
+        ic(self.check_current_song)
+        ic(self.check_song_queue)
+
+
 
         cs_title = '\n'.join(self.yt_cstitle)
 
@@ -321,17 +370,15 @@ class Music(commands.Cog):
 
         embed_songtitle.add_field(name='Queue', value=sq_title, inline=False)
 
-        await interaction.followup.send(embed=embed_songtitle)
+        await ctx.send(embed=embed_songtitle)
 
 
 
 
 
 
-    @app_commands.command(name='find', description='find a song/video on youtube')
-    async def find(self, interaction: discord.Interaction, query: str):
-
-        await interaction.response.defer()
+    @commands.command(name='find', description='find a song/video on youtube')
+    async def find(self, ctx, *, query: str):
 
         result_dict = {}
         # title_dict = []
@@ -378,18 +425,17 @@ class Music(commands.Cog):
         embed_find.add_field(name='title', value=emtitle, inline=False)
 
 
-        await interaction.followup.send(embed=embed_find)
+        await ctx.send(embed=embed_find)
             
 
 
 
-    @app_commands.command(name='op', description='options for /find')
-    async def op(self, interaction: discord.Interaction, value: str):
-        await interaction.response.defer()
+    @commands.command(name='op', description='options for /find')
+    async def op(self, ctx, *, value: str):
+        
 
-        channel = interaction.user.voice.channel
-        vc = discord.utils.get(self.bot.voice_clients, guild=interaction.guild)
-
+        channel = ctx.author.voice.channel
+        
         with open("temp-ytlist.json", "r") as file:
             data = json.load(file)
 
@@ -399,13 +445,13 @@ class Music(commands.Cog):
 
         self.song_queue.append(link)
 
-        if vc is None:
-            await channel.connect()
+        if not ctx.voice_client:
+            await self.join_channel(ctx)
 
-        if not interaction.guild.voice_client.is_playing():
-            self.play_next(interaction)
+        if not ctx.voice_client.is_playing():
+            self.play_next(ctx)
 
-        await interaction.followup.send(f"Option {value} selected!")
+        await ctx.send(f"Option {value} selected!")
 
 
 
@@ -418,4 +464,4 @@ class Music(commands.Cog):
 
    
 async def setup(bot):
-    await bot.add_cog(Music(bot), guilds=[discord.Object(id=718052721751752776)])
+    await bot.add_cog(Music(bot))

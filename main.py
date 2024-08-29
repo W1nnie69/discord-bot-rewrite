@@ -11,12 +11,15 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), applicatio
 
 @bot.event
 async def on_ready():
-    print("online")
+    print(f'Logged in as {bot.user}')
 
     for filename in os.listdir("./cogs"):
         if filename.endswith(".py"):
             await bot.load_extension(f"cogs.{filename[:-3]}")
 
+
+    # Sync commands
+    print("Commands have been synced.")
 
 
 bot.run(config.token)
