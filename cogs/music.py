@@ -155,7 +155,7 @@ class Music(commands.Cog):
             voice_channel.stop()
 
             FFMPEG_OPTIONS = {
-            'executable': '/bin/ffmpeg',
+            'executable': 'ffmpeg.exe',
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
             'options': '-vn'
         }   
