@@ -15,16 +15,12 @@ class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-        self.song_queue = {}
-        self.current_song = {}
-        self.yt_sqtitle = []
-        self.yt_cstitle = []
-        self.check_song_queue = []
-        self.check_current_song = []
+        self.song_queue = []
+        self.current_song = []
 
         self.loop_current_song = False
         self.queue_is_looping = False
-        self.loop = False
+
 
 
     @commands.Cog.listener()
@@ -46,64 +42,68 @@ class Music(commands.Cog):
 
 
     def play_next(self, ctx):
+        if self.song_queue:
+
+
+            if not self.queue_is_looping:
         
-    # If looping, play the same song again
-        if self.loop_current_song:
-            # checks if there is a song in current_song
-            if self.current_song:
-                # Takes song from current_song and plays it
-                loop1_url = self.current_song[0]
-                self.bot.loop.create_task(self.play_youtube(ctx, loop1_url))
-            
-            else: # In case if current_song is empty and loop is enabled
-                # adds the first song in song_queue to current_song
-                self.current_song.append(self.song_queue[0])
 
-                # Takes song from current_song and plays it
-                loop2_url = self.current_song[0]     
-                self.bot.loop.create_task(self.play_youtube(ctx, loop2_url))
+                if not self.loop_current_song:
+                    #default behaviour, no loops--------------------------------------
 
-        # When not looping current song
-        elif not self.loop_current_song:
+                    if self.current_song: #checks if current_song is empty, if not it will clear it
+                        self.current_song.clear()
 
-            if self.queue_is_looping:
+                    # self.current_song = self.song_queue.popitem()
                 
-                if self.current_song:
+                    self.current_song = self.song_queue.pop(0)
+
+                    self.bot.loop.create_task(self.play_youtube(ctx))
+
                     
-                    self.song_queue.append(self.current_song[0])
-                    self.current_song.clear()
-                    self.current_song.append(self.song_queue[0])     
-                    url = self.song_queue.pop(0)
-                    self.bot.loop.create_task(self.play_youtube(ctx, url))
+                else:
+                    #if current song is LOOPING---------------------------------------
+                    if self.current_song: #checks if current_song is empty, if not it will clear it
+                        self.bot.loop.create_task(self.play_youtube(ctx))
+                        
 
-                if not self.current_song:
-
-                    self.yt_title.pop(0)
-                    # adds first song in song_queue to current_song (for when loop is applied when the current song is playing)
-                    self.current_song.append(self.song_queue[0])
-                    # Takes first song in song_queue and plays it while removing it from the list
-                    url = self.song_queue.pop(0)
-                    self.bot.loop.create_task(self.play_youtube(ctx, url))
-
-            elif self.song_queue:
-                ic(self.song_queue)
-                self.current_song.clear()
-                self.current_song = self.song_queue
-                ic(self.current_song)
-                # url = self.song_queue.pop(0)
-                self.bot.loop.create_task(self.play_youtube(ctx))
-
-
+                    else:
+                        #If current song is empty
+                        self.current_song = self.song_queue.pop(0)
+                        self.bot.loop.create_task(self.play_youtube(ctx))
+                        
+            
             else:
-                # For when queue is empty
-                voice_channel = ctx.voice_client
-                if voice_channel.is_playing():
-                    time.sleep(1)
+                #if QUEUE is looping--------------------------------------------------
+
+                #check if there is value in current_song
+                if self.current_song: #checks if current_song is empty, if not it will add it back to the queue
+                    self.song_queue.append(self.current_song.copy())
+                    self.current_song.clear()
+
+                    # Takes first song in song_queue and returns it to current_song while removing it from the song_queue
+                    self.current_song = self.song_queue.pop(0) 
+
+                    self.bot.loop.create_task(self.play_youtube(ctx))
 
                 else:
-                    self.bot.loop.create_task(self.say_q_empty(ctx))
-                    self.current_song.clear()
+                    #If current_song is empty
+                    self.current_song = self.song_queue.pop(0)
+                    self.bot.loop.create_task(self.play_youtube(ctx))
+                
 
+        else:
+
+            if self.loop_current_song:
+                #check if loop_current_song is true--------------------------------------
+                if self.current_song:
+                #if loop current_song is enable and only 1 song was added,
+                #making song_queue empty
+                    self.bot.loop.create_task(self.play_youtube(ctx))
+
+            else:
+                #song_queue is empty
+                self.bot.loop.create_task(self.say_q_empty(ctx))
 
 
 
@@ -138,45 +138,13 @@ class Music(commands.Cog):
 
             voice_channel.play(discord.FFmpegOpusAudio(url2, **FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
 
-            # await ctx.send(f"Now playing: {info['title']}")
+            await ctx.send(f"Now playing: {info['title']}")
             # await interaction.response.send_message(f"Now playing: {info['title']}")
             
             # self.yt_title.append(info['title'])
 
         # return info['title']
 
-
-
-
-
-    # @commands.command()
-    # async def sync(self, ctx, global_sync: bool = False) -> None:
-    #     if global_sync:
-    #         # Sync commands globally
-    #         fmt = await self.bot.tree.sync()
-    #         await ctx.send(f"Synced {len(fmt)} global commands.")
-    #     else:
-    #         # Sync commands for the guild
-    #         fmt = await self.bot.tree.sync(guild=ctx.guild)
-    #         await ctx.send(f"Synced {len(fmt)} guild commands.")
-        
-
-
-
-    # @commands.command()
-    # async def clear_global_commands(self, ctx):
-    #     global_commands = await self.bot.tree.fetch_commands()
-    #     for command in global_commands:
-    #         await self.bot.tree.delete_command(command.id)
-    #     await ctx.send("All global commands have been cleared.")
-        
-
-
-
-    # @commands.command()
-    # async def desync(self, ctx) -> None:
-    #     ctx.bot.tree.clear_commands(guild=ctx.guild)
-    #     await ctx.send("Local commands have been cleared.")
 
 
 
@@ -216,7 +184,13 @@ class Music(commands.Cog):
         # If not connected, join the voice channel
             await self.join_channel(ctx)
 
-        self.song_queue.append(url)
+
+        with yt_dlp.YoutubeDL() as ydl:
+            info = ydl.extract_info(url, download=False)
+            title = info['title']
+
+
+        self.song_queue.append({'title':title, 'link':url})
 
         if not ctx.voice_client.is_playing():
             self.play_next(ctx)
@@ -233,14 +207,13 @@ class Music(commands.Cog):
         if voice_channel and voice_channel.is_playing():
             voice_channel.stop()
 
-        self.play_next(ctx)
+        # self.play_next(ctx)
         
 
 
 
 
 
-    
     @commands.command(name='stop', description='Stops the current song')
     async def stop(self, ctx):
         voice_channel = ctx.voice_client
@@ -259,7 +232,13 @@ class Music(commands.Cog):
     async def loop(self, ctx):
 
         self.loop_current_song = not self.loop_current_song
-        await ctx.send(f"Looping current song: {self.loop_current_song}")
+
+        if self.loop_current_song == True:
+            self.queue_is_looping == False
+            await ctx.send(f"Looping current song")
+
+        else:
+            await ctx.send(f"Stopping loop")
 
 
 
@@ -269,6 +248,7 @@ class Music(commands.Cog):
         self.queue_is_looping = not self.queue_is_looping
 
         if self.queue_is_looping == True:
+            self.loop_current_song = False
             await ctx.send(f"Looping the queue")
 
         else:
@@ -289,62 +269,39 @@ class Music(commands.Cog):
             colour=yellow
         )
 
-        # cs = self.current_song
-        # sq = self.song_queue
-        
-        # print(cs)
-        # print(sq)
-
-        # self.check_current_song
-        ic(self.current_song)
-        ic(self.song_queue)
-        print("")
-        ic(self.check_current_song)
-        ic(self.check_song_queue)
-
-        if self.check_current_song != self.current_song:
-
-            self.check_current_song.clear()
-            self.check_song_queue.clear()
-            self.yt_cstitle.clear()
-            self.yt_sqtitle.clear()
-
-            with yt_dlp.YoutubeDL() as ydl_q:
-                
-                self.check_current_song = self.current_song.copy()
-                self.check_song_queue = self.song_queue.copy()
-
-
-                for i in self.check_current_song:
-                    info_cs = ydl_q.extract_info(i, download=False)
-                    info_cs = info_cs.get('title', None)
-                    self.yt_cstitle.append(info_cs)
-                    print(info_cs)
-
-                for i in self.check_song_queue:
-                    info_sq = ydl_q.extract_info(i, download=False)
-                    info_sq = info_sq.get('title', None)
-                    self.yt_sqtitle.append(info_sq)
-                    print(info_sq)
-
-        
-        ic(self.current_song)
-        ic(self.song_queue)
-        print("")
-        ic(self.check_current_song)
-        ic(self.check_song_queue)
-
-
-
-        cs_title = '\n'.join(self.yt_cstitle)
-
-        sq_title = '\n'.join(self.yt_sqtitle)
+       
+        cs_title = self.current_song['title']
 
         embed_songtitle.add_field(name='Current Song', value=cs_title, inline=False)
 
-        embed_songtitle.add_field(name='Queue', value=sq_title, inline=False)
 
-        await ctx.send(embed=embed_songtitle)
+        sq_title = []
+
+        for title in self.song_queue:
+            sq_title.append(title['title'])
+
+        if sq_title:
+        
+            index = 0
+
+            sq_title_with_index = []
+
+            for titles in sq_title:
+                index = index + 1
+                sq_title_with_index.append(f"{index}) " + titles)
+                print(sq_title_with_index)
+
+
+            sq_title_with_index_and_bracket_removed = '\n'.join(sq_title_with_index)
+
+            embed_songtitle.add_field(name='Queue', value=sq_title_with_index_and_bracket_removed, inline=False)
+
+            await ctx.send(embed=embed_songtitle)
+
+        else:
+            embed_songtitle.add_field(name='Queue', value="Empty", inline=False)
+
+            await ctx.send(embed=embed_songtitle)
 
 
 
@@ -419,10 +376,10 @@ class Music(commands.Cog):
         
         
         jshand.rmJsonVal()
+ 
+                           # title = 0     link = 1
+        self.song_queue.append({'title':title, 'link':link})
 
-        # self.song_queue.append(link)
-
-        self.song_queue = {'title':title, 'link':link}
 
         ic(self.song_queue)
 
