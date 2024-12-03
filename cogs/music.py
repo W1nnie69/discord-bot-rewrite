@@ -7,28 +7,30 @@ import time
 from youtube_search import YoutubeSearch
 import json
 from icecream import ic
+import json_handling as jshand
+
 
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+        self.song_queue = {}
+        self.current_song = {}
+        self.yt_sqtitle = []
+        self.yt_cstitle = []
+        self.check_song_queue = []
+        self.check_current_song = []
+
+        self.loop_current_song = False
+        self.queue_is_looping = False
+        self.loop = False
+
 
     @commands.Cog.listener()
     async def on_ready(self):
         print("music cog loaded")
 
-
-    song_queue = []
-    current_song = []
-    yt_sqtitle = []
-    yt_cstitle = []
-    check_song_queue = []
-    check_current_song = []
-
-    loop_current_song = False
-    queue_is_looping = False
-    loop = False
 
 
     async def join_channel(self, ctx):
@@ -39,35 +41,6 @@ class Music(commands.Cog):
     
     async def say_q_empty(self, ctx):
         await ctx.send(f"Queue is empty")
-
-
-
-
-    async def rmJsonVal(self):
-        with open("temp-ytlist.json", "r") as file:
-            data = json.load(file)
-
-        for i in range(1,11):
-            data.pop(str(i))
-
-        with open("temp-ytlist.json", "w") as file2:
-            json.dump(data, file2, indent=4)
-
-
-
-
-    async def isJsonEmpty(self):
-        with open("temp-ytlist.json", "rb") as file:
-            data = json.load(file)
-        
-        if not data:
-            print("json empty")
-            return True
-        
-        else:
-            print("json is not empty")
-            return False
-
 
 
 
@@ -113,11 +86,12 @@ class Music(commands.Cog):
                     self.bot.loop.create_task(self.play_youtube(ctx, url))
 
             elif self.song_queue:
-
+                ic(self.song_queue)
                 self.current_song.clear()
-                self.current_song.append(self.song_queue[0])
-                url = self.song_queue.pop(0)
-                self.bot.loop.create_task(self.play_youtube(ctx, url))
+                self.current_song = self.song_queue
+                ic(self.current_song)
+                # url = self.song_queue.pop(0)
+                self.bot.loop.create_task(self.play_youtube(ctx))
 
 
             else:
@@ -133,7 +107,7 @@ class Music(commands.Cog):
 
 
 
-    async def play_youtube(self, ctx, url):
+    async def play_youtube(self, ctx):
 
         ydl_opts = {
         'format': 'bestaudio/best',
@@ -145,6 +119,8 @@ class Music(commands.Cog):
             'preferredquality': '192',
         }],
         }
+
+        url = self.current_song['link']
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
@@ -247,8 +223,6 @@ class Music(commands.Cog):
 
             #todo: fix the stupid title thing
         
-
-
 
 
 
@@ -408,7 +382,7 @@ class Music(commands.Cog):
         # numbered_links_str = '\n'.join(numbered_links)
         emtitle = []
 
-        for i in result_dict:
+        for i in result_dict: #for the embed
             emtitle.append(f"{i}) {result_dict[i]['title']}")
 
         emtitle = '\n'.join(emtitle)
@@ -439,11 +413,18 @@ class Music(commands.Cog):
         with open("temp-ytlist.json", "r") as file:
             data = json.load(file)
 
+
+        title = data[value]['title']
         link = data[value]['link']
         
-        await self.rmJsonVal()
+        
+        jshand.rmJsonVal()
 
-        self.song_queue.append(link)
+        # self.song_queue.append(link)
+
+        self.song_queue = {'title':title, 'link':link}
+
+        ic(self.song_queue)
 
         if not ctx.voice_client:
             await self.join_channel(ctx)
