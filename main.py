@@ -6,7 +6,7 @@ import asyncio
 import config
 
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), application_id = 887197279386214480)
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), application_id = 887197279386214480, help_command=None)
 
 
 @bot.event
