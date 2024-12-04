@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import asyncio
 import yt_dlp
 from discord import Color
@@ -28,6 +28,60 @@ class Music(commands.Cog):
         print("music cog loaded")
 
 
+    
+    async def auto_disconnect(self, ctx):
+        voice_channel = ctx.voice_client
+        if voice_channel:
+            if not voice_channel.is_playing():
+
+                for _ in range(60): #Time in seconds
+                    if voice_channel.is_playing():
+                        return
+                    
+                    else:
+                        await asyncio.sleep(1)
+
+                voice_channel.stop()
+                await ctx.voice_client.disconnect()
+
+
+
+    @commands.command(name="help", description="Bot help page")
+    async def help(self, ctx):
+        yellow = Color.yellow()
+
+        embed_helppage = discord.Embed(
+            title="Help page",
+            colour=yellow
+        )
+
+        play =  "!play <yt link>                 | Might work with links from other websites, feel free to try. (remove <> when typing commands)"
+        find =  "!find <song title/yt vid title> | Only searches user's input on youtube."
+        op =    "!op <number>                    | Select a song/vid from the search results of !find"
+        skip =  "!skip                           | To skip the current song/vid."
+        stop =  "!stop                           | To stop the bot completely, clearing the queue."
+        loop =  "!loop                           | Repeats the current song indefinitely until the user types the command again to disable looping."
+        loopq = "!loopq                          | Repeats the whole queue + current song/vid indefinitely until the user types the command again to disable looping."
+        queue = "!queue                          | Displays the current song and the upcoming songs in the queue."
+        joincmd  = "!join                           | Makes the bot join the voice channel you're currently in."
+        leave = "!leave                          | Disconnects the bot from the current voice channel."
+
+    
+
+        embed_helppage.add_field(name="Commands", value=play, inline=False)
+        embed_helppage.add_field(name="", value=find, inline=False)
+        embed_helppage.add_field(name="", value=op, inline=False)
+        embed_helppage.add_field(name="", value=skip, inline=False)
+        embed_helppage.add_field(name="", value=stop, inline=False)
+        embed_helppage.add_field(name="", value=loop, inline=False)
+        embed_helppage.add_field(name="", value=loopq, inline=False)
+        embed_helppage.add_field(name="", value=queue, inline=False)
+        embed_helppage.add_field(name="", value=joincmd, inline=False)
+        embed_helppage.add_field(name="", value=leave, inline=False)
+
+        await ctx.send(embed=embed_helppage)
+
+
 
     async def join_channel(self, ctx):
         channel = ctx.author.voice.channel
@@ -37,7 +91,6 @@ class Music(commands.Cog):
     
     async def say_q_empty(self, ctx):
         await ctx.send(f"Queue is empty")
-
 
 
 
@@ -103,7 +156,9 @@ class Music(commands.Cog):
 
             else:
                 #song_queue is empty
+                self.current_song.clear()
                 self.bot.loop.create_task(self.say_q_empty(ctx))
+                self.bot.loop.create_task(self.auto_disconnect(ctx))
 
 
 
@@ -147,11 +202,9 @@ class Music(commands.Cog):
 
 
 
-
     @commands.command(name="ping", description="testing")
     async def ping(self, ctx):
         await ctx.send("pong")
-
 
 
 
@@ -165,15 +218,10 @@ class Music(commands.Cog):
         
 
 
-
-
-
     @commands.command(name='leave', description='leaves the channel')
     async def leave(self, ctx):
         await ctx.voice_client.disconnect()
         
-
-
 
 
     @commands.command(name='play', description='plays youtube links')
@@ -199,8 +247,6 @@ class Music(commands.Cog):
         
 
 
-
-
     @commands.command(name='skip', description='skips the current song')
     async def skip(self, ctx):
         voice_channel = ctx.voice_client
@@ -209,9 +255,6 @@ class Music(commands.Cog):
 
         # self.play_next(ctx)
         
-
-
-
 
 
     @commands.command(name='stop', description='Stops the current song')
@@ -243,8 +286,8 @@ class Music(commands.Cog):
 
 
 
-    @commands.command(name='loop_q', description='Loops the whole queue')
-    async def loop_q(self, ctx):
+    @commands.command(name='loopq', description='Loops the whole queue')
+    async def loopq(self, ctx):
         self.queue_is_looping = not self.queue_is_looping
 
         if self.queue_is_looping == True:
@@ -262,6 +305,11 @@ class Music(commands.Cog):
     @commands.command(name='queue', description='Shows the song queue')
     async def queue(self, ctx):
     
+        if not self.current_song:
+            if not self.song_queue:
+                ctx.send("The Queue is empty dumbass")
+                return
+
         yellow = Color.yellow()
 
         embed_songtitle = discord.Embed(
