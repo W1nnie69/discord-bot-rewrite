@@ -55,9 +55,8 @@ class Music(commands.Cog):
             colour=yellow
         )
 
-        play =  "!play <yt link>                 | Might work with links from other websites, feel free to try. (remove <> when typing commands)"
-        find =  "!find <song title/yt vid title> | Only searches user's input on youtube."
-        op =    "!op <number>                    | Select a song/vid from the search results of !find"
+        play =  "!play <yt link/yt title>        | Plays yt links or searches a yt video by putting in title (remove <> when typing commands)"
+        op =    "!op <number>                    | Select a song/vid from the search results of !play"
         skip =  "!skip                           | To skip the current song/vid."
         stop =  "!stop                           | To stop the bot completely, clearing the queue."
         loop =  "!loop                           | Repeats the current song indefinitely until the user types the command again to disable looping."
@@ -69,7 +68,6 @@ class Music(commands.Cog):
     
 
         embed_helppage.add_field(name="Commands", value=play, inline=False)
-        embed_helppage.add_field(name="", value=find, inline=False)
         embed_helppage.add_field(name="", value=op, inline=False)
         embed_helppage.add_field(name="", value=skip, inline=False)
         embed_helppage.add_field(name="", value=stop, inline=False)
@@ -300,6 +298,72 @@ class Music(commands.Cog):
 
 
 
+    @commands.command(name='play', description='plays youtube links')
+    async def play(self, ctx, *, query: str):
+
+        # Check if the bot is already connected to a voice channel
+        if ctx.voice_client is None:
+        # If not connected, join the voice channel
+            await self.join_channel(ctx)
+
+
+        links = ["http://", "https://", "www."]
+
+        try: 
+            if any(link in query for link in links):  #for yt links
+                print("link")
+                
+                with yt_dlp.YoutubeDL() as ydl:
+                    info = ydl.extract_info(query, download=False)
+                    title = info['title']
+
+                self.song_queue.append({'title':title, 'link':query})
+
+                if not ctx.voice_client.is_playing():
+                    self.play_next(ctx)
+
+            else:
+                print("normal query") #for yt searches
+                result_dict = {}
+                
+                results = YoutubeSearch(query, max_results=10).to_dict()
+                for index, v in enumerate(results, start=1):
+
+                    link = 'https://www.youtube.com/watch?v=' + v['id']
+                    title = v['title']
+
+                    result_dict[str(index)] = {"title": title, "link": link}
+                    
+                with open("temp-ytlist.json", "w") as outfile: 
+                    json.dump(result_dict, outfile, indent=4)
+
+                emtitle = []
+
+                for i in result_dict: #for the embed
+                    emtitle.append(f"{i}) {result_dict[i]['title']}")
+
+                emtitle = '\n'.join(emtitle)
+
+                yellow = Color.yellow()
+
+                embed_find = discord.Embed(
+                    title=f'Search Results: "{query}" ',
+                    colour=yellow
+                )
+
+                embed_find.add_field(name='title', value=emtitle, inline=False)
+
+                await ctx.send(embed=embed_find)
+
+
+
+        except Exception as e:
+            await ctx.send("Unknown error occured. Try again")
+            print(f"Error: {e}")
+
+
+    
+
 
 
     @commands.command(name='queue', description='Shows the song queue')
@@ -307,7 +371,7 @@ class Music(commands.Cog):
     
         if not self.current_song:
             if not self.song_queue:
-                ctx.send("The Queue is empty dumbass")
+                await ctx.send("The Queue is empty dumbass")
                 return
 
         yellow = Color.yellow()
@@ -353,62 +417,6 @@ class Music(commands.Cog):
 
 
 
-
-
-
-    @commands.command(name='find', description='find a song/video on youtube')
-    async def find(self, ctx, *, query: str):
-
-        result_dict = {}
-        # title_dict = []
-        # a = 0
-
-        results = YoutubeSearch(query, max_results=10).to_dict()
-        for index, v in enumerate(results, start=1):
-            # a = a + 1  
-
-            link = 'https://www.youtube.com/watch?v=' + v['id']
-            title = v['title']
-
-            result_dict[str(index)] = {"title": title, "link": link}
-            # yt_title = v['title']
-            
-            # title_dict.append(v)
-
-
-
-        with open("temp-ytlist.json", "w") as outfile: 
-            json.dump(result_dict, outfile, indent=4)
-
-        # for i in range(1,11):
-        #     msg = dict1[i]
-
-        # numbered_links = [f"{idx}) {data['title']}: {data['link']}" for idx, data in result_dict.items()]
-        # numbered_links_str = '\n'.join(numbered_links)
-        emtitle = []
-
-        for i in result_dict: #for the embed
-            emtitle.append(f"{i}) {result_dict[i]['title']}")
-
-        emtitle = '\n'.join(emtitle)
-
-        yellow = Color.yellow()
-
-
-        embed_find = discord.Embed(
-            title=f'Search Results: "{query}" ',
-            colour=yellow
-        )
-
-
-        embed_find.add_field(name='title', value=emtitle, inline=False)
-
-
-        await ctx.send(embed=embed_find)
-            
-
-
-
     @commands.command(name='op', description='options for /find')
     async def op(self, ctx, *, value: str):
         
@@ -439,12 +447,6 @@ class Music(commands.Cog):
 
         await ctx.send(f"Option {value} selected!")
 
-
-
-    @commands.command(name='test', description='testing')
-    async def test(self, ctx):
-        # await interaction.response.send_message("testingsrufbg")
-        await ctx.send("testing baslls")
 
 
 
