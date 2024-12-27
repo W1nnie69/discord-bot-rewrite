@@ -220,29 +220,7 @@ class Music(commands.Cog):
     async def leave(self, ctx):
         await ctx.voice_client.disconnect()
         
-
-
-    @commands.command(name='play', description='plays youtube links')
-    async def play(self, ctx, url):
-
-        # Check if the bot is already connected to a voice channel
-        if ctx.voice_client is None:
-        # If not connected, join the voice channel
-            await self.join_channel(ctx)
-
-
-        with yt_dlp.YoutubeDL() as ydl:
-            info = ydl.extract_info(url, download=False)
-            title = info['title']
-
-
-        self.song_queue.append({'title':title, 'link':url})
-
-        if not ctx.voice_client.is_playing():
-            self.play_next(ctx)
-
-            #todo: fix the stupid title thing
-        
+            
 
 
     @commands.command(name='skip', description='skips the current song')
@@ -264,7 +242,6 @@ class Music(commands.Cog):
             self.song_queue.clear()
         
         #fix stop as it works like skip LOL
-
 
 
 
@@ -304,7 +281,12 @@ class Music(commands.Cog):
         # Check if the bot is already connected to a voice channel
         if ctx.voice_client is None:
         # If not connected, join the voice channel
-            await self.join_channel(ctx)
+            try:
+                await self.join_channel(ctx)
+
+            except:
+                await ctx.send("Join a channel first dumbass")
+                return
 
 
         links = ["http://", "https://", "www."]
@@ -317,6 +299,9 @@ class Music(commands.Cog):
                     info = ydl.extract_info(query, download=False)
                     title = info['title']
 
+                if self.current_song:
+                    await ctx.send("Song added to queue!")
+                                   
                 self.song_queue.append({'title':title, 'link':query})
 
                 if not ctx.voice_client.is_playing():
