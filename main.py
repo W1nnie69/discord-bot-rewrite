@@ -13,14 +13,9 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), applicatio
 async def on_ready():
     print(f'Logged in as {bot.user}')
 
-    option = input("Load test or live: ")
-    if option == "test":
-        await bot.load_extension("cogs.testing_cog")
-
-    else:
-        for filename in os.listdir("./cogs"):
-            if filename.endswith(".py"):
-                await bot.load_extension(f"cogs.{filename[:-3]}")
+    for filename in os.listdir("./cogs"):
+        if filename.endswith(".py"):
+            await bot.load_extension(f"cogs.{filename[:-3]}")
 
 
     # Sync commands
