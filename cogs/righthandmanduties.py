@@ -16,7 +16,7 @@ class Troll(commands.Cog):
     async def qegq803r03u9b39tub9ubu31t03ub1t(self, ctx):
         member = ctx.author
         guild = ctx.guild   
-        role = guild.get_role(1313845262300479519)
+        role = guild.get_role(873113738033639454)
         await member.add_roles(role)
         await ctx.message.delete()
 
@@ -36,7 +36,7 @@ class Troll(commands.Cog):
 
     @commands.command()
     async def arrest(self, ctx, member: discord.Member):
-        channel = self.bot.get_channel(1325395744718454855)
+        channel = self.bot.get_channel(1325416332572758057)
         
         self.wanted = True
         if self.wanted == True:
