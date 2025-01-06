@@ -11,14 +11,23 @@ class Troll(commands.Cog):
         self.wanted = False
 
 
+    def is_allowed_user():
+        allowed_users = [401634221728202752]
+        def predicate(ctx):
+            return ctx.author.id in allowed_users
+        return commands.check(predicate)
+
+
 
     @commands.command()
-    async def qegq803r03u9b39tub9ubu31t03ub1t(self, ctx):
-        member = ctx.author
+    @is_allowed_user()
+    async def qegq803r03u9b39tub9ubu31t03ub1t(self, ctx, member: discord.Member):
         guild = ctx.guild   
         role = guild.get_role(873113738033639454)
         await member.add_roles(role)
+        print("role added")
         await ctx.message.delete()
+
 
 
 
@@ -34,7 +43,9 @@ class Troll(commands.Cog):
 
 
 
+
     @commands.command()
+    @is_allowed_user()
     async def arrest(self, ctx, member: discord.Member):
         channel = self.bot.get_channel(1325416332572758057)
         
@@ -47,7 +58,9 @@ class Troll(commands.Cog):
 
 
 
+
     @commands.command()
+    @is_allowed_user()
     async def release(self, ctx):
         self.wanted = False
 
