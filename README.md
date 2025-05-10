@@ -1,7 +1,6 @@
-Discord Bot Rewrite
+Discord Music Bot 
 
-A modular and extensible Discord bot built using Python's discord.py library. This bot is designed with a focus on maintainability and scalability, incorporating features like music playback, JSON-based data handling, and a cog-based architecture for easy feature expansion.
-Features
+I wasnt happy with discord disallowing music bots, therefore I made one myself.
 
     🎵 Music Playback: Stream audio in voice channels using ffmpeg.
 
