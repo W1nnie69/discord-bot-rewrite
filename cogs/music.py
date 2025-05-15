@@ -195,7 +195,7 @@ class Music(commands.Cog):
             await ctx.send(f"Now playing: {info['title']}")
 
         except Exception as e:
-           await ctx.send("Error downloading video. \n Video might be age-restricted.")
+           await ctx.send("Error downloading video.\nVideo might be age-restricted.")
             # await interaction.response.send_message(f"Now playing: {info['title']}")
             
             # self.yt_title.append(info['title'])
