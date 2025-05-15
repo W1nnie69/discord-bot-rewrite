@@ -175,13 +175,14 @@ class Music(commands.Cog):
 
         url = self.current_song['link']
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
-            info = ydl.extract_info(url, download=False)
-            url2 = info['url']
+                info = ydl.extract_info(url, download=False)
+                url2 = info['url']
 
-            voice_channel = ctx.voice_client
-            voice_channel.stop()
+                voice_channel = ctx.voice_client
+                voice_channel.stop()
 
             FFMPEG_OPTIONS = {
             'executable': '/bin/ffmpeg',
@@ -192,6 +193,9 @@ class Music(commands.Cog):
             voice_channel.play(discord.FFmpegOpusAudio(url2, **FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
 
             await ctx.send(f"Now playing: {info['title']}")
+
+        except Exception as e:
+            ctx.send("Error downloading video. \n Video might be age-restricted.")
             # await interaction.response.send_message(f"Now playing: {info['title']}")
             
             # self.yt_title.append(info['title'])
