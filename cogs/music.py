@@ -184,11 +184,11 @@ class Music(commands.Cog):
                 voice_channel = ctx.voice_client
                 voice_channel.stop()
 
-                FFMPEG_OPTIONS = {
-                'executable': 'ffmpeg.exe',
-                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                'options': '-vn'
-            }   
+            FFMPEG_OPTIONS = {
+            'executable': '/bin/ffmpeg',
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+            'options': '-vn'
+        }   
 
             voice_channel.play(discord.FFmpegOpusAudio(url2, **FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
 
