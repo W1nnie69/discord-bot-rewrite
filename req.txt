@@ -1,0 +1,5 @@
+discord.py
+davey
+pynacl
+youtube-search
+icecream
